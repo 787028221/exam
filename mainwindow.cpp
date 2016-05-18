@@ -8,6 +8,12 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 }
 
+MainWindow::Title(QWidget *parent) : QWidget(parent)
+{
+    this->setFixedHeight(30);
+   // icon_label = new Qlabel();
+}
+
 MainWindow::~MainWindow()
 {
     delete ui;
