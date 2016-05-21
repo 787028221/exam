@@ -40,7 +40,7 @@ int genrate_paper(char *major)
 {
     int ret;
 
-    loading_exam();
+    //loading_exam();
     return ret;
 }
 

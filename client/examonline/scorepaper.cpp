@@ -15,3 +15,8 @@ scorepaper::~scorepaper()
     delete ui;
 }
 
+void scorepaper::showPaper()
+{
+
+}
+

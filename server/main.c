@@ -195,13 +195,17 @@ void process_client(CLIENT * client, char *recvbuf, int len, int type)
     char *p_str;
     char *key_point;
     char pkt_buf[4096] = {0};
-    char msg[8][4096] = {0, 0};
+    char msg[8][4096] = {0};
+    char *paperId;
     int i;  
     int ret;
     char *str = NULL;
   
     printf("Received client( %s ) message: %s\n", client->name, recvbuf);  
 
+    if (len <= 0 || recvbuf == NULL) {
+        return;
+    }
     memcpy(buf, recvbuf, len);
     buf[len] = '\0';
     p_str = buf;
@@ -215,7 +219,6 @@ void process_client(CLIENT * client, char *recvbuf, int len, int type)
         }
         round++;
     }
-
 
     if (strncmp(msg[0], "02", strlen("02")) == 0) {
         printf("student login check!\r\n");
@@ -314,7 +317,6 @@ void process_client(CLIENT * client, char *recvbuf, int len, int type)
     } else if (strncmp(msg[0], "40", strlen("40")) == 0) {
         send_teacher_msg_to_client(client->fd);
         send_student_msg_to_client(client->fd);
-        //send_exam_msg_to_admin
         send_exam_msg_to_admin(client->fd);
     } else if (strncmp(msg[0], "42", strlen("42")) == 0) {
         printf("Send %s msg to client\r\n", msg[1]);
@@ -332,11 +334,17 @@ void process_client(CLIENT * client, char *recvbuf, int len, int type)
         send_paper_to_student(client->fd, msg[1], strlen(msg[1]), msg[2], strlen(msg[2]));
 
     } else if (strncmp(msg[0], "50", strlen("50")) == 0) {
-        ret = add_exam_to_db(msg[1], base64_decode(msg[2], strlen(msg[2])), msg[3], msg[4], msg[5], msg[6]);
+        char *major;
+
+        major = base64_decode(msg[2], strlen(msg[2]));
+        ret = add_exam_to_db(msg[1], major, msg[3], msg[4], msg[5], msg[6]);
         if (ret == 0) {
             str = "EA501EB";
         } else {
             str = "EA500EB";
+        }
+        if (major) {
+            free(major);
         }
         printf("add exam to db\r\n");
     } else if (strncmp(msg[0], "53", strlen("53")) == 0) {
@@ -368,25 +376,90 @@ void process_client(CLIENT * client, char *recvbuf, int len, int type)
         send_paper_to_student(client->fd, msg[1], strlen(msg[1]), msg[2], strlen(msg[2]));
         str = "EA623EB";
     } else if (strncmp(msg[0], "61", strlen("61")) == 0) {
+        char *major;
+        char *question;
+        char *answer;
+
+        major = base64_decode(msg[3], strlen(msg[3]));
+        question = base64_decode(msg[4], strlen(msg[4]));
+        answer = base64_decode(msg[5], strlen(msg[5]));
+
         printf("Add question to db\r\n");
-        ret = add_question_to_db(msg[1], base64_decode(msg[2], strlen(msg[2])), \
-                                 base64_decode(msg[3], strlen(msg[3])), \
-                                 base64_decode(msg[4], strlen(msg[4])));
+        ret = add_question_to_db(msg[1], msg[2], major, question, answer);
         if (ret == 0) {
             str = "EA611EB";
         } else {
             str = "EA610EB";
         }
-    } else if (strncmp(msg[0], "72", strlen("72")) == 0) {
-        printf("Insert user question to db\r\n");
-        add_questioned_to_db(msg[1], base64_decode(msg[2], strlen(msg[2])), msg[3], \
-                             base64_decode(msg[4], strlen(msg[4])), msg[5], msg[6]);
+        if (major) {
+            free(major);
+        }
+        if (question) {
+            free(question);
+        }
+        if (answer) {
+            free(answer);
+        }
+    } else if (strncmp(msg[0], "63", strlen("63")) == 0) {
+        printf("Del question from db\r\n");
+        ret = del_question_from_db(msg[1]);
+        if (ret == 0) {
+            str = "EA612EB";
+        } else {
+            str = "EA613EB";
+        }
+    } else if (strncmp(msg[0], "66", strlen("66")) == 0) {
+        printf("Add exam to paper\r\n");
+        add_examing_paper(msg[1], base64_decode(msg[2], strlen(msg[2])), msg[3], msg[4]);
+        if (ret == 0) {
+            str = "EA614EB";
+        } else {
+            str = "EA615EB";
+        }
+    } else if (strncmp(msg[0], "67", strlen("67")) == 0) {
+        printf("create paper db\r\n");
+        create_questioned_db(msg[1], msg[2]);
+
+    }else if (strncmp(msg[0], "72", strlen("72")) == 0) {
+        printf("Insert user examing to db\r\n");
+        char *major;
+        char *stuid;
+        char *question;
+        char *answer;
+        char *myAnswer;
+        question = base64_decode(msg[5], strlen(msg[5]));
+        answer  = base64_decode(msg[6], strlen(msg[6]));
+        myAnswer = base64_decode(msg[7], strlen(msg[7]));
+       
+        add_questioned_to_db(msg[1], msg[2], msg[3], msg[4], question, answer, myAnswer);
+        if (question) {
+            free(question);
+        }
+        if (answer) {
+            free(answer);
+        }
+        if (myAnswer) {
+            free(myAnswer);
+        }
     } else if (strncmp(msg[0], "82", strlen("82")) == 0) {
-        ret = add_score_to_examed(msg[1], msg[2], base64_decode(msg[3], strlen(msg[3])), msg[4]);
+        char *major;
+        printf("add score to examed\r\n");
+        major = base64_decode(msg[3], strlen(msg[3]));
+        ret = add_score_to_examed(msg[1], msg[2], major, msg[4], msg[5]);
         if (ret == 0) {
             str="EA821EB";
+        } else {
+            str="EA820EB";
         }
+        if (major) {
+            free(major);
+        }
+       
+    } else if (strncmp(msg[0], "83", strlen("83")) == 0) {
+          printf("Add an Answer to db\r\n");
+
     } else if (strncmp(msg[0], "92", strlen("92")) == 0) {
+   
         printf("Genrate paper\r\n");
         ret = send_paper_to_student();
     }

@@ -47,12 +47,8 @@ void studentpersonal::init()
 
     connect(tcpSocket,SIGNAL(readyRead()),this,SLOT(revData()));
 
-//    connect(ui->tableWidget_examing,SIGNAL(itemDoubleClicked(QTableWidgetItem*)),\
-//            this,SLOT(openexam(QTableWidgetItem*)));
-
     sendcmd(userid, type);
 }
-
 
 void studentpersonal::init_tableWidget()
 {
@@ -84,7 +80,6 @@ void studentpersonal::revData()
     QString result = datas.mid(3, 2);
     int list_size;
     int i;
-//    QString userdata = datas.mid(5, -1);
 
     qDebug() << "Not system packet";
     if(head != "EA" || tail != "EB"){
@@ -145,7 +140,6 @@ void studentpersonal::revData()
                 QString major = strlist.at(2);
                 QString fullscore = strlist.at(3);
                 QString time = strlist.at(4);
-//                checkBox->setCheckState(Qt::Unchecked);
 
                 item0->setText(paperid);
                 item1->setText(major);
@@ -163,12 +157,10 @@ void studentpersonal::revData()
                 ui->tableWidget_examing->setItem(pktcnt, 2, item2);
                 ui->tableWidget_examing->setItem(pktcnt, 3, item3);
                 qDebug() << pktcnt <<userdata;
-//                memcnt++;
             } else if (result == "22") {
                 QStringList strlist = userdata.split("|");
                 list_size = strlist.size();
                 QTableWidgetItem *item0, *item1, *item2, *item3;
-//                checkBox = new QTableWidgetItem;
                 item0 = new QTableWidgetItem;
                 item1 = new QTableWidgetItem;
                 item2 = new QTableWidgetItem;
@@ -178,7 +170,6 @@ void studentpersonal::revData()
                 QString major = strlist.at(2);
                 QString score = strlist.at(3);
                 QString fullscore = strlist.at(4);
-//                checkBox->setCheckState(Qt::Unchecked);
 
                 item0->setText(paperid);
                 item1->setText(major);
@@ -202,37 +193,6 @@ void studentpersonal::revData()
             }
         }
     }
-
-//    if (type == "2") {
-//        if (result == "21") {
-//            QStringList strlist = userdata.split("|");
-//            list_size = strlist.size();
-//            if (list_size < 2) {
-//                return;
-//            }
-
-//            QString name = strlist.at(0);
-//            QString id = strlist.at(1);
-//            ui->stuid_2->setText(id);
-//            ui->stuname->setText(name);
-//        } else if (result == "20") {
-//            QMessageBox::information(this, "info", "个人信息提取失败");
-//        } else {
-//            QMessageBox::information(this, "info", datas);
-//        }
-//    } else if (type == "3") {
-//        if (result == "21") {
-//            QMessageBox::information(this, "info", "修改密码成功");
-//            ui->leNewPwd->clear();
-//            ui->leNewPwd_chk->clear();
-//        } else if (result == "20") {
-//            QMessageBox::information(this, "info", "修改密码失败");
-//        } else {
-//            QMessageBox::information(this, "info", datas);
-//        }
-//    } else if (type == "4") {
-
-//    }
 }
 
 void studentpersonal::on_btnOk_clicked()
@@ -279,7 +239,6 @@ TAR_OUT:
 void studentpersonal::on_btnQuit_clicked()
 {
     this->close();
-
 }
 
 void studentpersonal::new_tcp_connect()
@@ -297,7 +256,6 @@ void studentpersonal::displayError(QAbstractSocket::SocketError)
     qDebug()<<tcpSocket->errorString();
     QMessageBox::information(this, "show", err);
     tcpSocket->close();
-
 }
 
 int studentpersonal::sendcmd(QString data, QString type)
@@ -314,15 +272,21 @@ int studentpersonal::sendcmd(QString data, QString type)
 
 void studentpersonal::openexam(int row, int cloume)
 {
-    //QMessageBox::warning(this,tr("Warning"),tr("双击!"));
     if (!isExam) {
+        QString senddata;
+        QString cmd = "67";
+        QString delta = "|";
+
         paperid = ui->tableWidget_examing->item(row, 0)->text();
         major = ui->tableWidget_examing->item(row, 1)->text();
         examTime = ui->tableWidget_examing->item(row, 3)->text();
 
+        senddata = paperid + delta + userid;
         ex = new exam;
         ex->show();
         ex->init(paperid);
+        this->close();
+        sendcmd(senddata, cmd);
         qDebug() << paperid << major << examTime;
     }
 }

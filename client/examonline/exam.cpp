@@ -12,9 +12,9 @@ extern QString major;
 extern QString examTime;
 extern QString userid;
 question *nq;
-
+QString id;
+int total_cnt = 0;
 //QListIterator<question> iterator(list);
-
 
 exam::exam(QWidget *parent) :
     QDialog(parent),
@@ -69,6 +69,7 @@ void exam::questionMessage()
         startRecord();
         //getPaper();
         qDebug() << "YES";
+
     } else if (reply == QMessageBox::No) {
         qDebug()<< "NO";
         this->close();
@@ -89,9 +90,9 @@ void exam::startRecord()
 
 void exam::recordTiming()
 {
-    if (--second <= 0) {
+    if (--second < 0) {
         second = 59;
-        if (--minute <= 0) {
+        if (--minute < 0) {
             minute = 59;
             hour--;
         }
@@ -121,6 +122,11 @@ void exam::recordTiming()
     str += tmp;
     ui->leLeftTime->show();
     ui->leLeftTime->setText(str);
+    if (second == 0 && minute == 0 && hour == 0) {
+        QMessageBox::information(this, "show", "考试时间结束");
+        subcribe_score();
+        this->close();
+    }
 }
 
 void exam::tcpInit(QString pId)
@@ -136,13 +142,13 @@ void exam::tcpInit(QString pId)
     senddata = userid + tr("|") + pId;
     qDebug() << senddata;
     sendcmd(senddata, code);
+    id = pId;
 }
 
 void exam::revData()
 {
     int i;
-    QString err = "用户名或者密码错误";
-    QString err_unreg = "该用户未注册";
+
     QString datas = tcpSocket->readAll();
 
     QString head = datas.mid(0, 2);
@@ -163,17 +169,24 @@ void exam::revData()
         QString type = pkt.mid(2, 1);
         QString result = pkt.mid(3, 2);
         QString userdata = pkt.mid(5, -1);
-        int pktcnt = pkt.mid(5, 1).toInt();
+        //int pktcnt = pkt.mid(5, 1).toInt();
         if (type == "6") {
             if (result == "21") {
                 QStringList strlist = userdata.split("|");
+                int pktcnt = strlist.at(0).toInt();
+                total_cnt = pktcnt + 1;
 
+                QByteArray text = QByteArray::fromBase64(strlist.at(1).toUtf8());
+                QTextCodec *codec = QTextCodec::codecForName("UTF-8");
+//                QString questionStr = codec->toUnicode(text);
                 question *q = new question;
-                q->type = strlist.at(1);
-                q->question = strlist.at(2);
-                q->answer = strlist.at(3);
-                q->questionId  = i;
-                q->score = 20; /*TEAM*/
+                q->type = codec->toUnicode(text);
+                text = QByteArray::fromBase64(strlist.at(2).toUtf8());
+                q->question = codec->toUnicode(text);
+                text = QByteArray::fromBase64(strlist.at(3).toUtf8());
+                q->answer = codec->toUnicode(text);
+                q->questionId  = pktcnt;
+                q->score = 1; /*TEAM*/
                 q->isAns = false;
                 questionmap.insert(pktcnt, q);
                 qDebug() << pktcnt << q->type << q->question <<  q->answer << q->questionId;
@@ -223,43 +236,42 @@ int exam::sendcmd(QString data, QString type)
 void exam::on_btnNext_clicked()
 {
 
+    if (curQuestion > questionmap.size()) {
+        return;
+    }
+    curQuestion++;
     QMap<int, question *>::iterator it = questionmap.find(curQuestion);
 
     qDebug() << "map size: " <<questionmap.size();
     if (it != questionmap.end()) {
-        curQuestion++;
         nq = it.value();
         ui->teQuestion->setText(nq->question);
         ui->leQuestionID->clear();
         ui->leChkAns->clear();
+        ui->leMyAns->clear();
         qDebug() << "Question id: " << curQuestion;
         ui->leQuestionID->setText(QString::number(curQuestion + 1, 10));
     }
-
-
 }
 
 
 void exam::on_btnPrevious_clicked()
 {
+    if (curQuestion <=  0) {
+        return;
+    }
+    curQuestion--;
     QMap<int, question *>::iterator it = questionmap.find(curQuestion);
 
-    if (it == questionmap.end()) {
-        nq = it.value();
-        ui->teQuestion->setText(nq->question);
-        ui->leQuestionID->clear();
-        ui->leChkAns->clear();
-        qDebug() << "Question id: " << curQuestion;
-        ui->leQuestionID->setText(QString::number(curQuestion, 10));
-    }
     if (it != questionmap.end()) {
         nq = it.value();
         ui->teQuestion->setText(nq->question);
         ui->leQuestionID->clear();
         ui->leChkAns->clear();
+        ui->leMyAns->clear();
         qDebug() << "Question id: " << curQuestion;
         ui->leQuestionID->setText(QString::number(curQuestion + 1, 10));
-        curQuestion--;
+        //curQuestion--;
         if (curQuestion <= 0) {
             curQuestion = 0;
             return;
@@ -283,12 +295,12 @@ void exam::on_btnSubmit_clicked()
     if (reply == QMessageBox::Yes) {
         //getPaper();
         qDebug() << "YES";
+        subcribe_score();
+        this->close();
     } else if (reply == QMessageBox::No) {
         qDebug()<< "NO";
-        //this->close();
     }
 }
-
 
 void exam::on_btnchkAn_clicked()
 {
@@ -301,22 +313,29 @@ void exam::on_btnchkAn_clicked()
         myAns = ui->leMyAns->text();
         QByteArray  tmp_in (nq->question.toUtf8());
         QString ques_base64 = QString(tmp_in.toBase64());
-//        QString ans_base64 =
         QByteArray  tmp_in2 (major.toUtf8());
         QString major_base64 = QString(tmp_in2.toBase64());
+        QString questionIdStr = QString::number(nq->questionId, 10);
+        QByteArray  tmp_in3 (nq->answer.toUtf8());
+        QString answer_base64 = QString(tmp_in3.toBase64());
+//        QString questionIdStr = QString::number(nq->questionId, 10);
 
+        QByteArray  tmp_in4 (myAns.toUtf8());
+        QString my_answer_base64 = QString(tmp_in4.toBase64());
         if (myAns == nq->answer) {
-            senddata = paperid + delta + major_base64 + delta + \
-                    userid + delta + ques_base64 + delta + \
-                    nq->answer + delta + myAns;
             getScore += nq->score;
-            sendcmd(senddata, cmd);
+
         }
+
+        senddata = userid  + delta +  id + delta + questionIdStr + delta +\
+                nq->type + delta + ques_base64 + delta  + \
+                answer_base64 + delta + my_answer_base64;
+        qDebug() << senddata;
+        sendcmd(senddata, cmd);
         nq->isAns = true;
     }
     ui->leChkAns->setText(nq->answer);
 
-//    sendcmd();
 }
 
 void exam::getPaper()
@@ -327,4 +346,21 @@ void exam::getPaper()
 
     senddata = userid + delta + paperid;
     //sendcmd(senddata, cmd);
+}
+
+void exam::subcribe_score()
+{
+    QString senddata;
+    QString delta = "|";
+    QString cmd = "82";
+    QString major_str;
+    QString thisScore;
+
+    thisScore = QString::number(getScore * (100 / total_cnt), 10);
+    QByteArray  tmp_in1 (major.toUtf8());
+    major_str = QString(tmp_in1.toBase64());
+    qDebug() << "Get score: " << thisScore << getScore << 100 / total_cnt;
+    senddata = userid + delta + id + delta + major_str + delta  + thisScore + delta + tr("100");
+    sendcmd(senddata, cmd);
+    qDebug() << senddata;
 }

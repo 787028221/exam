@@ -69,7 +69,6 @@ void adminpersonal::init()
     sendcmd(userid, type);
 }
 
-
 void adminpersonal::revData()
 {
     QString err = "用户名或者密码错误";
@@ -330,7 +329,7 @@ void adminpersonal::on_btnDelStu_clicked()
 
     qDebug() << ItemStuCnt <<"students";
     for (i=0; i<ItemStuCnt; i++) {
-        QString stuid; //= ui->tableWidget_exam->item(i, 0)->text();
+        QString stuid;
         itemStu = ui->tabWidget_stu->item(i, 1);
         itemStuchk = ui->tabWidget_stu->item(i, 2);
 
@@ -360,7 +359,7 @@ void adminpersonal::on_btnDelTea_clicked()
 
     QString logincode = "54";
     QString delta = "|";
-    QString major, teacherid, studentid;
+    QString major, teacherid;
     QTableWidgetItem *itemTeacher;
     QTableWidgetItem *itemTeacherchk;
     QTableWidgetItem *itemStu;
@@ -369,7 +368,7 @@ void adminpersonal::on_btnDelTea_clicked()
     major = ui->addpapername->text();
     qDebug() << ItemTeacherCnt <<"Teacher";
     for (i=0; i<ItemTeacherCnt; i++) {
-        QString teacherid; //= ui->tableWidget_exam->item(i, 0)->text();
+        QString teacherid;
         itemTeacher = ui->tabWidget_teacher->item(i, 1);
         itemTeacherchk = ui->tabWidget_teacher->item(i, 2);
         if (itemTeacherchk == NULL) {
@@ -418,7 +417,7 @@ void adminpersonal::on_btnsubmit_clicked()
     major = ui->addpapername->text();
 
     QDateTime time = QDateTime::currentDateTime();//获取系统现在的时间
-    QString str = time.toString("yyyy-MM-dd hh:mm:ss ddd"); //设置显示格式
+    QString str = time.toString("yyyy-MM-dd-hh:mm:ss"); //设置显示格式
 
     qDebug() << ItemTeacherCnt << ItemStuCnt;
     if(major.isEmpty()) {

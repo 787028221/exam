@@ -1,6 +1,6 @@
 .PHONY : clean
 INCLUDE=/usr/include
-LIB=/usr/lib/mysql
+LIB=/usr/lib/mysql -lpthread
 OBJ=main.o ex_db.o base64.o
 TAR=exam
 

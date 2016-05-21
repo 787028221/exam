@@ -3,6 +3,9 @@
 
 enum {
     DB_CON_ERR = -100,
+    DB_MEM_ERR,
+    DB_STAT_ERR,
+    DB_OK = 0,
 };
 
 int init_db();

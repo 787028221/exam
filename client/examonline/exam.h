@@ -54,6 +54,7 @@ private:
     void new_tcp_connect();
     int getScore;
     void getPaper();
+    void subcribe_score();
     QMap<int, question*> questionmap;
 private:
     Ui::exam *ui;

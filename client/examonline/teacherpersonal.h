@@ -5,6 +5,7 @@
 #include<QtNetwork>
 #include<QtNetwork/QTcpSocket>
 #include<QMap>
+
 namespace Ui {
     class teacherpersonal;
 }
@@ -35,7 +36,8 @@ private:
     int questionType;
     int dbQuestionNum;
     int examLine;
-    void set_show_local(QString quesType, QString question, QString answer);
+    void set_show_local(QString questionId, QString quesType, QString question, QString answer);
+    int questionNum;
 private slots:
     void revData();
     void displayError(QAbstractSocket::SocketError);
@@ -46,8 +48,10 @@ private slots:
     void choice(int index);
     void on_chbA_clicked();
     void on_chbB_clicked();
+    void majorShow(int index);
     void on_btnGenrate_clicked();
-
+    void on_btnDel_clicked();
+    void on_btnSendPaper_clicked();
 };
 
 

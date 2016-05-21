@@ -42,22 +42,62 @@ void teacherpersonal::init()
     ui->tabWidget_teacher->setHorizontalHeaderLabels(headers);
     ui->tabWidget_teacher->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft);
     connect(ui->cbx_select, SIGNAL(currentIndexChanged(int)), this, SLOT(choice(int)));
+    connect(ui->cbxType_major, SIGNAL(currentIndexChanged(int)), this, SLOT(majorShow(int)));
     headers.clear();
-    headers << tr( "类型" ) << tr( "题目" ) << tr( "答案" ) <<  tr( "选项" );
-    ui->labQuestionList->setColumnCount(4);
+    headers << tr( "试题编号" ) <<tr( "类型" ) << tr( "题目" ) << tr( "答案" ) <<  tr( "选项" );
+    ui->labQuestionList->setColumnCount(5);
     ui->labQuestionList->setHorizontalHeaderLabels(headers);
     ui->labQuestionList->horizontalHeader()->setDefaultAlignment(Qt::AlignHCenter);
     headers.clear();
-    headers << tr( "类型" ) << tr( "题目" ) << tr( "答案" );
-    ui->tabWExam->setColumnCount(3);
+    headers << tr( "试题编号" ) << tr( "类型" ) << tr( "题目" ) << tr( "答案" );
+    ui->tabWExam->setColumnCount(4);
     ui->tabWExam->setHorizontalHeaderLabels(headers);
     ui->tabWExam->horizontalHeader()->setDefaultAlignment(Qt::AlignHCenter);
+    ui->majorName->setText(ui->cbxType_major->currentText());
     ui->otherQuestion->hide();
     ui->chbA->hide();
     ui->chbB->hide();
     ui->chbC->hide();
     ui->chbD->hide();
     dbQuestionNum = 0;
+}
+
+void teacherpersonal::majorShow(int index)
+{
+    ui->majorName->setText(ui->cbxType_major->currentText());
+}
+
+void teacherpersonal::on_btnDel_clicked()
+{
+    int i;
+    QString cmd = "63";
+    QString delta = "|";
+    QString id;
+    QTableWidgetItem *itemExam;
+    QTableWidgetItem *itemchk;
+    QTableWidgetItem *itemStu;
+    QTableWidgetItem *itemStuchk;
+    QCheckBox *chk;
+
+    qDebug() << "Question num: " << dbQuestionNum;
+    for (i=0; i<dbQuestionNum; i++) {
+        itemExam = ui->labQuestionList->item(i, 0);
+        itemchk = ui->labQuestionList->item(i, 4);
+
+        if (itemExam == NULL || itemchk == NULL) {
+            continue;
+        }
+        id = itemExam->text();
+        if (itemchk->checkState() != Qt::Checked) {
+            qDebug() << i << "Question is not select";
+            continue;
+        }
+        qDebug() << "removeRow 0 ";
+        ui->labQuestionList->removeRow(i);
+        qDebug() << "removeRow 1 ";
+        dbQuestionNum--;
+        sendcmd(id, cmd);
+    }
 }
 
 void teacherpersonal::choice(int index)
@@ -133,7 +173,6 @@ void  teacherpersonal::on_chbB_clicked()
     } else {
         ui->chbA->show();
     }
-
 }
 
 void teacherpersonal::revData()
@@ -245,17 +284,23 @@ void teacherpersonal::revData()
                 item3 = new QTableWidgetItem;
 
                 int pktcnt = strlist.at(0).toInt();
-                QString questiontype = strlist.at(1);
-                QString major = strlist.at(2);
+                QString questionId = strlist.at(1);
+                QString questiontype = strlist.at(2);
                 QString question = strlist.at(3);
                 QString answer = strlist.at(4);
-                //QString name = strlist.at(5);
 
-                item0->setText(questiontype);
-                //item1->setText(major);
-                item1->setText(question);
-                item2->setText(answer);
-                //item0->setText(name);
+                item0->setText(questionId);
+                item1->setText(questiontype);
+                QByteArray text = QByteArray::fromBase64(question.toUtf8());
+                QTextCodec *codec = QTextCodec::codecForName("UTF-8");
+                QString questionStr = codec->toUnicode(text);
+
+                item2->setText(questionStr);
+                text = QByteArray::fromBase64(answer.toUtf8());
+                //QTextCodec *codec = QTextCodec::codecForName("KOI8-R");
+                QString answerStr = codec->toUnicode(text);
+                item3->setText(answerStr);
+
                 checkBox->setCheckState(Qt::Unchecked);
                 item0->setFlags(item0->flags() & (~Qt::ItemIsEditable));
                 item1->setFlags(item1->flags() & (~Qt::ItemIsEditable));
@@ -266,13 +311,55 @@ void teacherpersonal::revData()
                 ui->labQuestionList->setItem(pktcnt, 0, item0);
                 ui->labQuestionList->setItem(pktcnt, 1, item1);
                 ui->labQuestionList->setItem(pktcnt, 2, item2);
-                ui->labQuestionList->setItem(pktcnt, 3, checkBox);
+                ui->labQuestionList->setItem(pktcnt, 3, item3);
+                ui->labQuestionList->setItem(pktcnt, 4, checkBox);
+                dbQuestionNum++;
             }
         } else if (type == "6") {
             if (result == "11") {
                 QMessageBox::information(this, "info", "添加成功");
-            } else {
+            } else if (result == "10") {
                 QMessageBox::information(this, "info", "添加失败");
+            } else if (result == "12") {
+                QMessageBox::information(this, "info", "删除成功");
+            } else if (result == "13") {
+                QMessageBox::information(this, "info", "删除失败");
+            } else if (result == "14") {
+               QString head = "EA";
+               QString tail = "EB";
+               QTcpSocket *paperSocket;
+               QString senddata;
+               QTableWidgetItem *item1;
+               int rowCnt;
+               int i,j;
+
+               paperSocket = new QTcpSocket(this);
+               paperSocket->connectToHost("192.168.0.108", 4321);
+               rowCnt = ui->tabWExam->rowCount();
+               for (i=0; i<rowCnt; i++) {
+                   senddata = head;
+                   for (j=0; j<4; j++) {
+                       item1 = ui->tabWExam->item(i, j);
+                       QByteArray  tmp_in2 (item1->text().toUtf8());
+                       qDebug() << item1->text();
+                       QString str_base642 = QString(tmp_in2.toBase64());
+                       senddata += tr("|") + str_base642;
+                   }
+
+                   senddata += tail;
+                   qDebug() << rowCnt << senddata;
+                   paperSocket->write(senddata.toLatin1().data(), senddata.size());
+               }
+
+               senddata = "EABYEEB";
+               paperSocket->write(senddata.toLatin1().data(), senddata.size());
+               paperSocket->close();
+
+               qDebug() << senddata;
+               QMessageBox::information(this, "info", "试卷提交成功成功");
+
+            } else {
+                QMessageBox::information(this, "info", "未知数据");
             }
         }
     }
@@ -280,7 +367,6 @@ void teacherpersonal::revData()
 
 void teacherpersonal::on_btnOk_clicked()
 {
-
     bool flag = false;
     QSqlQuery query;
     QString old_pwd;
@@ -338,6 +424,8 @@ void teacherpersonal::on_btnAdd_clicked()
     QString senddata;
     QString quesType;
     QString major;
+    QDateTime time = QDateTime::currentDateTime();//获取系统现在的时间
+    QString questionId = time.toString("yyyyMMddhhmmss"); //设置显示格式
 
     qDebug() << ui->cbxType_major->currentText();
     QMap<QString,QString>::iterator it = majormap.find(ui->cbxType_major->currentText());
@@ -347,6 +435,7 @@ void teacherpersonal::on_btnAdd_clicked()
     qDebug() << type;
     question = ui->te_question->toPlainText();
     qDebug() << question;
+
 
     switch(questionType) {
     case SINGLE_CHOICE:
@@ -395,11 +484,12 @@ void teacherpersonal::on_btnAdd_clicked()
     QString str_base64 = QString(tmp_in.toBase64());
     QByteArray  tmp_in2 (answer.toUtf8());
     QString str_base642 = QString(tmp_in2.toBase64());
-    senddata = quesType + delta + str_base641 + delta + str_base64 + delta + str_base642;
+    senddata = questionId + delta + quesType + delta + str_base641 + delta + str_base64 + delta + str_base642;
     qDebug() << questionType << senddata;
     sendcmd(senddata, cmd);
 
-    set_show_local(quesType, question, answer);
+    set_show_local(questionId, quesType, question, answer);
+
 }
 
 void teacherpersonal::on_btnGenrate_clicked()
@@ -410,11 +500,12 @@ void teacherpersonal::on_btnGenrate_clicked()
     examLine = 0;
 
     for (i=0; i<ui->labQuestionList->rowCount(); i++) {
-        checkBox = ui->labQuestionList->item(i, 3);
+        checkBox = ui->labQuestionList->item(i, 4);
         if (checkBox->checkState() == Qt::Checked) {
+            checkBox->setCheckState(Qt::Checked);
             qDebug() << i << ui->labQuestionList->rowCount() << "Add it";
             ui->tabWExam->setRowCount(examLine+1);
-            for (j=0; j<3; j++) {
+            for (j=0; j<4; j++) {
                 item = new QTableWidgetItem;
                 item->setText(ui->labQuestionList->item(i, j)->text());
                 qDebug() << i << j << ui->labQuestionList->item(i, j)->text();
@@ -423,33 +514,37 @@ void teacherpersonal::on_btnGenrate_clicked()
             examLine++;
         }
     }
+    QMessageBox::warning(this,tr("Warning"),tr("添加成功，请到试卷管理查看!"));
 }
 
-void teacherpersonal::set_show_local(QString quesType, QString question, QString answer)
+void teacherpersonal::set_show_local(QString questionId, QString quesType, QString question, QString answer)
 {
-    QTableWidgetItem *item1, *item2, *item3;
+    QTableWidgetItem *item1, *item2, *item3, *item0;
     QTableWidgetItem *checkBox;
 
     checkBox = new QTableWidgetItem;
-    //item0 = new QTableWidgetItem;
+    item0 = new QTableWidgetItem;
     item1 = new QTableWidgetItem;
     item2 = new QTableWidgetItem;
     item3 = new QTableWidgetItem;
 
     checkBox->setCheckState(Qt::Unchecked);
 
+    item0->setText(questionId);
     item1->setText(quesType);
     item2->setText(question);
     item3->setText(answer);
+    item0->setFlags(item0->flags() & (~Qt::ItemIsEditable));
     item1->setFlags(item1->flags() & (~Qt::ItemIsEditable));
     item2->setFlags(item2->flags() & (~Qt::ItemIsEditable));
     item3->setFlags(item3->flags() & (~Qt::ItemIsEditable));
 
     ui->labQuestionList->setRowCount(dbQuestionNum+1);
-    ui->labQuestionList->setItem(dbQuestionNum, 0, item1);
-    ui->labQuestionList->setItem(dbQuestionNum, 1, item2);
-    ui->labQuestionList->setItem(dbQuestionNum, 2, item3);
-    ui->labQuestionList->setItem(dbQuestionNum, 3, checkBox);
+    ui->labQuestionList->setItem(dbQuestionNum, 0, item0);
+    ui->labQuestionList->setItem(dbQuestionNum, 1, item1);
+    ui->labQuestionList->setItem(dbQuestionNum, 2, item2);
+    ui->labQuestionList->setItem(dbQuestionNum, 3, item3);
+    ui->labQuestionList->setItem(dbQuestionNum, 4, checkBox);
     qDebug()<< dbQuestionNum << quesType << question << answer;
 
     dbQuestionNum++;
@@ -488,6 +583,36 @@ int teacherpersonal::sendcmd(QString data, QString type)
 
 void teacherpersonal::openexam(int row, int cloume)
 {
+    qDebug()<< row << cloume;
+    QString senddata;
+
+
+
     scorepaper *p = new scorepaper;
     p->show();
+}
+
+void teacherpersonal::on_btnSendPaper_clicked()
+{
+    QDateTime time = QDateTime::currentDateTime();
+    QString paperId = time.toString("yyyyMMddhhmmss");
+    QString examTime = ui->timeSet->text();
+    QString TotalScore = ui->lescore->text();
+    QString major = ui->majorName->text();
+    QString delta = "|";
+    QString cmd = "66";
+    QString senddata;
+    QTableWidgetItem *item1, *item2, *item3, *item0;
+    int i, j;
+    int rowCnt;
+
+    if (examTime == NULL || examTime == 0 || TotalScore == NULL) {
+        QMessageBox::warning(this,tr("Warning"),tr("总分和时间不能为空!"));
+        return;
+    }
+    qDebug() << TotalScore << examTime;
+    QByteArray  tmp_in1 (major.toUtf8());
+    QString str_base64 = QString(tmp_in1.toBase64());
+    senddata = paperId + delta + str_base64 + delta + TotalScore + delta + examTime;
+    sendcmd(senddata, cmd);
 }

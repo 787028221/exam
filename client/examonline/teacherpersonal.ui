@@ -23,7 +23,7 @@
     </rect>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>1</number>
    </property>
    <widget class="QWidget" name="tab_7">
     <attribute name="title">
@@ -39,30 +39,7 @@
       </rect>
      </property>
     </widget>
-    <widget class="QLabel" name="label_38">
-     <property name="geometry">
-      <rect>
-       <x>260</x>
-       <y>20</y>
-       <width>26</width>
-       <height>19</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>总分</string>
-     </property>
-    </widget>
-    <widget class="QLineEdit" name="lescore">
-     <property name="geometry">
-      <rect>
-       <x>300</x>
-       <y>20</y>
-       <width>71</width>
-       <height>21</height>
-      </rect>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="btnOk_9">
+    <widget class="QPushButton" name="btnModify">
      <property name="geometry">
       <rect>
        <x>283</x>
@@ -105,7 +82,7 @@
       </property>
      </item>
     </widget>
-    <widget class="QPushButton" name="btnOk_11">
+    <widget class="QPushButton" name="btnRefresh">
      <property name="geometry">
       <rect>
        <x>546</x>
@@ -233,7 +210,7 @@
       </rect>
      </property>
     </widget>
-    <widget class="QPushButton" name="btnOk_10">
+    <widget class="QPushButton" name="btnDel">
      <property name="geometry">
       <rect>
        <x>414</x>
@@ -331,9 +308,9 @@
        </widget>
       </item>
       <item>
-       <widget class="QLabel" name="label_2">
+       <widget class="QLabel" name="majorName">
         <property name="text">
-         <string>                                 </string>
+         <string>                                         </string>
         </property>
        </widget>
       </item>
@@ -358,6 +335,16 @@
        </spacer>
       </item>
       <item>
+       <widget class="QLabel" name="label_38">
+        <property name="text">
+         <string>总分</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="lescore"/>
+      </item>
+      <item>
        <widget class="QLabel" name="label_36">
         <property name="text">
          <string>设置考试时间</string>
@@ -365,17 +352,17 @@
        </widget>
       </item>
       <item>
-       <widget class="QSpinBox" name="spinBox"/>
+       <widget class="QSpinBox" name="timeSet"/>
       </item>
       <item>
-       <widget class="QPushButton" name="sendPaper">
+       <widget class="QPushButton" name="btnSendPaper">
         <property name="text">
          <string>提交</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="btnOk_7">
+       <widget class="QPushButton" name="btnAutoCreatePaper">
         <property name="text">
          <string>自动组卷</string>
         </property>
